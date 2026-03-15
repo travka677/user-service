@@ -15,7 +15,7 @@ public class PaymentCard extends Auditable {
     private String number;
     private String holder;
     private LocalDate expirationDate;
-    private Boolean active;
+    private Boolean active = true;
 
     public User getUser() { return user; }
     public void setUser(User user) { this.user = user; }

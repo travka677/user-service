@@ -17,7 +17,7 @@ public class User extends Auditable {
     private String surname;
     private LocalDate birthDate;
     private String email;
-    private Boolean active;
+    private Boolean active = true;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PaymentCard> paymentCards = new ArrayList<>();
