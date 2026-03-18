@@ -80,7 +80,6 @@ jobs:
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
         run: |
           ./mvnw clean verify sonar:sonar \
-            -DskipTests \
             -Dsonar.projectKey=travka677_user-service \
             -Dsonar.projectName=user-service \
             -Dsonar.organization=travka677 \
