@@ -47,8 +47,8 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-      - name: Run unit tests
-        run: ./mvnw test -Dtest="com.innowise.userservice.service.UserServiceTest,com.innowise.userservice.service.PaymentCardServiceTest"
+      - name: Run tests
+        run: ./mvnw test
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
