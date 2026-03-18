@@ -85,7 +85,8 @@ jobs:
             -Dsonar.projectName=user-service \
             -Dsonar.organization=travka677 \
             -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} \
-            -Dsonar.token=${{ secrets.SONAR_TOKEN }}
+            -Dsonar.token=${{ secrets.SONAR_TOKEN }} \
+            -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
 
   docker:
     name: Artefact Creation
