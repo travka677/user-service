@@ -79,9 +79,9 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
         run: |
-          ./mvnw verify sonar:sonar \
+          ./mvnw sonar:sonar \
             -DskipTests \
-            -Dsonar.projectKey=user-service \
+            -Dsonar.projectKey=travka677_user-service \
             -Dsonar.projectName=user-service \
             -Dsonar.organization=travka677 \
             -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} \
