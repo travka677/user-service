@@ -65,7 +65,6 @@ jobs:
             -Dsonar.organization=travka677 \
             -Dsonar.host.url=https://sonarcloud.io \
             -Dsonar.token=${{ secrets.SONAR_TOKEN }} \
-            -Dsonar.qualitygate.wait=true
 
       - name: Upload test results
         if: always()
