@@ -33,6 +33,11 @@
         <sonar.organization>travka677</sonar.organization>
         <testcontainers.version>1.20.4</testcontainers.version>
         <lombok.version>1.18.30</lombok.version>
+        <!-- Sonar -->
+        <sonar.projectKey>travka677_user-service</sonar.projectKey>  <!-- ← это отсутствовало -->
+        <sonar.projectName>user-service</sonar.projectName>
+        <sonar.organization>travka677</sonar.organization>
+        <sonar.host.url>https://sonarcloud.io</sonar.host.url>
         <sonar.coverage.jacoco.xmlReportPaths>
             ${project.build.directory}/site/jacoco/jacoco.xml
         </sonar.coverage.jacoco.xmlReportPaths>
@@ -195,6 +200,6 @@
                 </executions>
             </plugin>
         </plugins>
-    </build> 
+    </build>
 
 </project>

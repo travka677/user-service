@@ -58,12 +58,7 @@ jobs:
       - name: Run Tests and SonarQube Analysis
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
-        run: |
-          ./mvnw verify sonar:sonar \
-            -Dsonar.projectKey=travka677_user-service \
-            -Dsonar.projectName=user-service \
-            -Dsonar.qualitygate.wait=true
+        run: ./mvnw verify sonar:sonar -Dsonar.qualitygate.wait=true
 
       - name: Upload test results
         if: always()
