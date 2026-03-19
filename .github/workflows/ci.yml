@@ -60,6 +60,10 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
           ./mvnw verify sonar:sonar \
+            -Dsonar.projectKey=travka677_user-service \
+            -Dsonar.projectName=user-service \
+            -Dsonar.organization=travka677 \
+            -Dsonar.host.url=https://sonarcloud.io \
             -Dsonar.token=${{ secrets.SONAR_TOKEN }} \
             -Dsonar.qualitygate.wait=true
 
