@@ -2,6 +2,7 @@ package com.innowise.userservice.service;
 
 import com.innowise.userservice.cache.CacheNames;
 import com.innowise.userservice.entity.PaymentCard;
+import com.innowise.userservice.exception.AccessDeniedException;
 import com.innowise.userservice.exception.NotFoundException;
 import com.innowise.userservice.repository.PaymentCardRepository;
 import com.innowise.userservice.specification.PaymentCardSpecification;
@@ -50,12 +51,12 @@ public class PaymentCardService {
     }
 
     @Caching(
-            put   = @CachePut(value = CacheNames.USER_CARDS, key = "#id"),
-            evict = @CacheEvict(value = CacheNames.USER_CARDS,
-                    key = "'list_' + #result.user.id")
+            put = @CachePut(value = CacheNames.USER_CARDS, key = "#id"),
+            evict = @CacheEvict(value = CacheNames.USER_CARDS, key = "'list_' + #result.user.id")
     )
     public PaymentCard updateCard(UUID id, PaymentCard updated) {
-        PaymentCard card = getCardById(id);
+        PaymentCard card = paymentCardRepository.findWithUserById(id)
+                .orElseThrow(() -> new NotFoundException("Card not found: " + id));
         card.setNumber(updated.getNumber());
         card.setHolder(updated.getHolder());
         card.setExpirationDate(updated.getExpirationDate());
@@ -63,25 +64,28 @@ public class PaymentCardService {
     }
 
     @Caching(
-            put   = @CachePut(value = CacheNames.USER_CARDS, key = "#id"),
-            evict = @CacheEvict(value = CacheNames.USER_CARDS,
-                    key = "'list_' + #result.user.id")
+            put = @CachePut(value = CacheNames.USER_CARDS, key = "#id"),
+            evict = @CacheEvict(value = CacheNames.USER_CARDS, key = "'list_' + #result.user.id")
     )
     public PaymentCard setCardActive(UUID id, Boolean active) {
-        PaymentCard card = getCardById(id);
+        PaymentCard card = paymentCardRepository.findWithUserById(id)
+                .orElseThrow(() -> new NotFoundException("Card not found: " + id));
         card.setActive(active);
         return paymentCardRepository.save(card);
     }
 
     @Caching(evict = {
             @CacheEvict(value = CacheNames.USER_CARDS, key = "#id"),
-            @CacheEvict(value = CacheNames.USER_CARDS,
-                    key = "'list_' + #userId",
-                    beforeInvocation = true)
+            @CacheEvict(value = CacheNames.USER_CARDS, key = "'list_' + #userId")
     })
     public void deleteCard(UUID id, UUID userId) {
         PaymentCard card = paymentCardRepository.findWithUserById(id)
                 .orElseThrow(() -> new NotFoundException("Card not found: " + id));
+
+        if (card.getUser() == null || !userId.equals(card.getUser().getId())) {
+            throw new AccessDeniedException("User " + userId + " is not the owner of card " + id);
+        }
+
         card.setActive(false);
         paymentCardRepository.save(card);
     }

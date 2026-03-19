@@ -21,7 +21,14 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(CardLimitExceededException.class)
     public ResponseEntity<ErrorResponse> handleCardLimitExceededException(CardLimitExceededException ex) {
         return ResponseEntity
-                .status(HttpStatus.BAD_REQUEST)
+                .status(HttpStatus.CONFLICT)
+                .body(new ErrorResponse(ex.getMessage()));
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ErrorResponse> handleAccessDeniedException(AccessDeniedException ex) {
+        return ResponseEntity
+                .status(HttpStatus.FORBIDDEN)
                 .body(new ErrorResponse(ex.getMessage()));
     }
 

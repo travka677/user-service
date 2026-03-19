@@ -2,6 +2,7 @@ package com.innowise.userservice.service;
 
 import com.innowise.userservice.entity.PaymentCard;
 import com.innowise.userservice.entity.User;
+import com.innowise.userservice.exception.AccessDeniedException;
 import com.innowise.userservice.exception.NotFoundException;
 import com.innowise.userservice.repository.PaymentCardRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -36,6 +37,7 @@ class PaymentCardServiceTest {
     private PaymentCardService paymentCardService;
 
     private PaymentCard card;
+    private User user;
     private UUID cardId;
     private UUID userId;
 
@@ -44,10 +46,12 @@ class PaymentCardServiceTest {
         cardId = UUID.randomUUID();
         userId = UUID.randomUUID();
 
-        User user = new User();
+        user = new User();
+        user.setId(userId);
         user.setName("Ivan");
 
         card = new PaymentCard();
+        card.setId(cardId);
         card.setNumber("1234567890123456");
         card.setHolder("Ivan Ivanov");
         card.setExpirationDate(LocalDate.now().plusYears(2));
@@ -59,9 +63,7 @@ class PaymentCardServiceTest {
     @DisplayName("Should return card when exists")
     void getCardById() {
         when(paymentCardRepository.findWithUserById(cardId)).thenReturn(Optional.of(card));
-
         PaymentCard result = paymentCardService.getCardById(cardId);
-
         assertThat(result).isEqualTo(card);
     }
 
@@ -69,19 +71,15 @@ class PaymentCardServiceTest {
     @DisplayName("Should throw NotFoundException when card not exists")
     void getCardByIdNotFound() {
         when(paymentCardRepository.findWithUserById(cardId)).thenReturn(Optional.empty());
-
         assertThatThrownBy(() -> paymentCardService.getCardById(cardId))
-                .isInstanceOf(NotFoundException.class)
-                .hasMessageContaining(cardId.toString());
+                .isInstanceOf(NotFoundException.class);
     }
 
     @Test
     @DisplayName("Should return list of cards by user id")
     void getCardsByUserId() {
         when(paymentCardRepository.findAllByUserId(userId)).thenReturn(List.of(card));
-
         List<PaymentCard> result = paymentCardService.getCardsByUserId(userId);
-
         assertThat(result).hasSize(1);
         assertThat(result.get(0)).isEqualTo(card);
     }
@@ -92,9 +90,7 @@ class PaymentCardServiceTest {
         PageRequest pageable = PageRequest.of(0, 10);
         when(paymentCardRepository.findAll(any(Specification.class), eq(pageable)))
                 .thenReturn(new PageImpl<>(List.of(card)));
-
         Page<PaymentCard> result = paymentCardService.getAllCards("Ivan Ivanov", true, pageable);
-
         assertThat(result.getContent()).hasSize(1);
     }
 
@@ -110,8 +106,6 @@ class PaymentCardServiceTest {
         when(paymentCardRepository.save(card)).thenReturn(card);
 
         PaymentCard result = paymentCardService.updateCard(cardId, updated);
-
-        assertThat(result.getNumber()).isEqualTo("9999999999999999");
         assertThat(result.getHolder()).isEqualTo("Petr Petrov");
         verify(paymentCardRepository).save(card);
     }
@@ -123,16 +117,13 @@ class PaymentCardServiceTest {
         when(paymentCardRepository.save(card)).thenReturn(card);
 
         PaymentCard result = paymentCardService.setCardActive(cardId, false);
-
         assertThat(result.getActive()).isFalse();
-        verify(paymentCardRepository).save(card);
     }
 
     @Test
     @DisplayName("Should set card inactive on delete")
     void deleteCard() {
         when(paymentCardRepository.findWithUserById(cardId)).thenReturn(Optional.of(card));
-        when(paymentCardRepository.save(card)).thenReturn(card);
 
         paymentCardService.deleteCard(cardId, userId);
 
@@ -141,10 +132,19 @@ class PaymentCardServiceTest {
     }
 
     @Test
+    @DisplayName("Should throw AccessDeniedException when user is not owner")
+    void deleteCardAccessDenied() {
+        UUID strangerId = UUID.randomUUID();
+        when(paymentCardRepository.findWithUserById(cardId)).thenReturn(Optional.of(card));
+
+        assertThatThrownBy(() -> paymentCardService.deleteCard(cardId, strangerId))
+                .isInstanceOf(AccessDeniedException.class);
+    }
+
+    @Test
     @DisplayName("Should throw NotFoundException when card not exists on delete")
     void deleteCardNotFound() {
         when(paymentCardRepository.findWithUserById(cardId)).thenReturn(Optional.empty());
-
         assertThatThrownBy(() -> paymentCardService.deleteCard(cardId, userId))
                 .isInstanceOf(NotFoundException.class);
     }

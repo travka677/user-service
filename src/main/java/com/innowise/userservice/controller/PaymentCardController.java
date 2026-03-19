@@ -35,13 +35,16 @@ public class PaymentCardController {
             @RequestParam(required = false) String holder,
             @RequestParam(required = false) Boolean active,
             Pageable pageable) {
-        return ResponseEntity.ok(paymentCardService.getAllCards(holder, active, pageable)
-                .map(paymentCardMapper::toResponse));
+        return ResponseEntity.ok(
+                paymentCardService.getAllCards(holder, active, pageable)
+                        .map(paymentCardMapper::toResponse)
+        );
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<PaymentCardResponse> updateCard(@PathVariable UUID id,
-                                                          @RequestBody @Valid PaymentCardRequest request) {
+    public ResponseEntity<PaymentCardResponse> updateCard(
+            @PathVariable UUID id,
+            @RequestBody @Valid PaymentCardRequest request) {
         PaymentCard updated = paymentCardService.updateCard(id, paymentCardMapper.toEntity(request));
         return ResponseEntity.ok(paymentCardMapper.toResponse(updated));
     }
@@ -49,7 +52,9 @@ public class PaymentCardController {
     @PatchMapping("/{id}/active")
     public ResponseEntity<PaymentCardResponse> setCardActive(@PathVariable UUID id,
                                                              @RequestParam Boolean active) {
-        return ResponseEntity.ok(paymentCardMapper.toResponse(paymentCardService.setCardActive(id, active)));
+        return ResponseEntity.ok(
+                paymentCardMapper.toResponse(paymentCardService.setCardActive(id, active))
+        );
     }
 
     @DeleteMapping("/{id}")

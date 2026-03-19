@@ -6,13 +6,24 @@ import com.innowise.userservice.dto.request.UserRequest;
 import com.innowise.userservice.dto.response.UserResponse;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 
 import java.time.LocalDate;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 class UserControllerIntegrationTest extends BaseIntegrationTest {
+
+    private static final AtomicLong CARD_COUNTER = new AtomicLong(2000_0000_0000_0000L);
+
+    private String uniqueCardNumber() {
+        return String.valueOf(CARD_COUNTER.getAndIncrement());
+    }
 
     private UserRequest buildUserRequest() {
         UserRequest request = new UserRequest();
@@ -24,27 +35,30 @@ class UserControllerIntegrationTest extends BaseIntegrationTest {
     }
 
     private UserResponse buildUser() {
-        return webTestClient.post().uri("/users")
-                .bodyValue(buildUserRequest())
-                .exchange()
-                .expectStatus().isCreated()
-                .expectBody(UserResponse.class)
-                .returnResult()
-                .getResponseBody();
+        ResponseEntity<UserResponse> response = restTemplate.postForEntity(
+                "/users", buildUserRequest(), UserResponse.class);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        return response.getBody();
+    }
+
+    private PaymentCardRequest buildCardRequest() {
+        PaymentCardRequest request = new PaymentCardRequest();
+        request.setNumber(uniqueCardNumber());
+        request.setHolder("Ivan Ivanov");
+        request.setExpirationDate(LocalDate.now().plusYears(2));
+        return request;
     }
 
     @Test
     @DisplayName("Should return 201 and created user")
     void createUser() {
-        webTestClient.post().uri("/users")
-                .bodyValue(buildUserRequest())
-                .exchange()
-                .expectStatus().isCreated()
-                .expectBody(UserResponse.class)
-                .value(body -> {
-                    assertThat(body.getName()).isEqualTo("Ivan");
-                    assertThat(body.getId()).isNotNull();
-                });
+        ResponseEntity<UserResponse> response = restTemplate.postForEntity(
+                "/users", buildUserRequest(), UserResponse.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().getName()).isEqualTo("Ivan");
+        assertThat(response.getBody().getId()).isNotNull();
     }
 
     @Test
@@ -52,19 +66,21 @@ class UserControllerIntegrationTest extends BaseIntegrationTest {
     void getUserById() {
         UserResponse created = buildUser();
 
-        webTestClient.get().uri("/users/" + created.getId())
-                .exchange()
-                .expectStatus().isOk()
-                .expectBody(UserResponse.class)
-                .value(body -> assertThat(body.getId()).isEqualTo(created.getId()));
+        ResponseEntity<UserResponse> response = restTemplate.getForEntity(
+                "/users/" + created.getId(), UserResponse.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().getId()).isEqualTo(created.getId());
     }
 
     @Test
     @DisplayName("Should return 404 when user not exists")
     void getUserByIdNotFound() {
-        webTestClient.get().uri("/users/" + UUID.randomUUID())
-                .exchange()
-                .expectStatus().isNotFound();
+        ResponseEntity<Void> response = restTemplate.getForEntity(
+                "/users/" + UUID.randomUUID(), Void.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
     }
 
     @Test
@@ -75,14 +91,16 @@ class UserControllerIntegrationTest extends BaseIntegrationTest {
         UserRequest updateRequest = buildUserRequest();
         updateRequest.setName("Petr");
         updateRequest.setSurname("Petrov");
-        updateRequest.setEmail("petr+" + System.nanoTime() + "@example.com");
 
-        webTestClient.put().uri("/users/" + created.getId())
-                .bodyValue(updateRequest)
-                .exchange()
-                .expectStatus().isOk()
-                .expectBody(UserResponse.class)
-                .value(body -> assertThat(body.getName()).isEqualTo("Petr"));
+        ResponseEntity<UserResponse> response = restTemplate.exchange(
+                "/users/" + created.getId(),
+                HttpMethod.PUT,
+                new HttpEntity<>(updateRequest),
+                UserResponse.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().getName()).isEqualTo("Petr");
     }
 
     @Test
@@ -90,11 +108,15 @@ class UserControllerIntegrationTest extends BaseIntegrationTest {
     void setUserActive() {
         UserResponse created = buildUser();
 
-        webTestClient.patch().uri("/users/" + created.getId() + "/active?active=false")
-                .exchange()
-                .expectStatus().isOk()
-                .expectBody(UserResponse.class)
-                .value(body -> assertThat(body.getActive()).isFalse());
+        ResponseEntity<UserResponse> response = restTemplate.exchange(
+                "/users/" + created.getId() + "/active?active=false",
+                HttpMethod.PATCH,
+                HttpEntity.EMPTY,
+                UserResponse.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().getActive()).isFalse();
     }
 
     @Test
@@ -102,15 +124,10 @@ class UserControllerIntegrationTest extends BaseIntegrationTest {
     void addCardToUser() {
         UserResponse created = buildUser();
 
-        PaymentCardRequest cardRequest = new PaymentCardRequest();
-        cardRequest.setNumber("1234567890123456");
-        cardRequest.setHolder("Ivan Ivanov");
-        cardRequest.setExpirationDate(LocalDate.now().plusYears(2));
+        ResponseEntity<Void> response = restTemplate.postForEntity(
+                "/users/" + created.getId() + "/cards", buildCardRequest(), Void.class);
 
-        webTestClient.post().uri("/users/" + created.getId() + "/cards")
-                .bodyValue(cardRequest)
-                .exchange()
-                .expectStatus().isCreated();
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
     }
 
     @Test
@@ -118,20 +135,14 @@ class UserControllerIntegrationTest extends BaseIntegrationTest {
     void addCardToUserLimitExceeded() {
         UserResponse created = buildUser();
 
-        PaymentCardRequest cardRequest = new PaymentCardRequest();
-        cardRequest.setNumber("1234567890123456");
-        cardRequest.setHolder("Ivan Ivanov");
-        cardRequest.setExpirationDate(LocalDate.now().plusYears(2));
-
         for (int i = 0; i < 5; i++) {
-            webTestClient.post().uri("/users/" + created.getId() + "/cards")
-                    .bodyValue(cardRequest)
-                    .exchange();
+            restTemplate.postForEntity(
+                    "/users/" + created.getId() + "/cards", buildCardRequest(), Void.class);
         }
 
-        webTestClient.post().uri("/users/" + created.getId() + "/cards")
-                .bodyValue(cardRequest)
-                .exchange()
-                .expectStatus().isEqualTo(409);
+        ResponseEntity<Void> response = restTemplate.postForEntity(
+                "/users/" + created.getId() + "/cards", buildCardRequest(), Void.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
     }
 }
