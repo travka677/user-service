@@ -1,0 +1,12 @@
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: validate
+
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+
+  cache:
+    type: redis
+    redis:
+      time-to-live: 3600000

@@ -1,0 +1,7 @@
+databaseChangeLog:
+  - include:
+      file: migrations/001_create_users_table.sql
+      relativeToChangelogFile: true
+  - include:
+      file: migrations/002_create_payment_cards_table.sql
+      relativeToChangelogFile: true
